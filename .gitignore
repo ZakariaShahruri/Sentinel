@@ -1,0 +1,15 @@
+# Root-level ignores for the Sentinel monorepo.
+# Component-specific ignores live in iot/, backend/, and frontend/ .gitignore files.
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+
+# Environment files (never commit real secrets)
+.env
+.env.local
+*.local
+
+# Logs
+*.log
