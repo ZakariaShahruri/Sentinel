@@ -1,0 +1,15 @@
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Get individual variables (these will come from OKD Secrets)
+DB_USER = os.getenv("DB_USER", "wsn")
+DB_PASS = os.getenv("DB_PASS", "greenpassword")
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = os.getenv("DB_PORT", "5433")
+DB_NAME = os.getenv("DB_NAME", "sentinel")
+
+# Assemble the URL
+DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
