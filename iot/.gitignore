@@ -1,0 +1,21 @@
+# Credentials / secrets
+.env
+sentinel-node/include/config.h
+sentinel-base/include/config.h
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node
+node_modules/
+package-lock.json
+
+# Data
+vibration_data.csv
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
