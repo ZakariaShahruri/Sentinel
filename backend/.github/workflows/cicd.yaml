@@ -1,0 +1,144 @@
+name: Backend CI/CD
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+
+  # -----------------------------
+  # LINT
+  # -----------------------------
+  lint:
+    runs-on: [self-hosted, my-laptop]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Ruff
+        run: pip install ruff
+
+      - name: Run Ruff Lint
+        run: ruff check .
+
+      - name: Run Ruff Format Check
+        run: ruff format --check .
+
+
+  # -----------------------------
+  # BUILD
+  # -----------------------------
+  build-and-push-backend:
+    needs: lint
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, my-laptop]
+
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image_tag: ${{ steps.short_sha.outputs.sha_short }}
+      image_name: ${{ steps.image.outputs.name }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set short SHA
+        id: short_sha
+        shell: powershell
+        run: |
+          echo "sha_short=$($env:GITHUB_SHA.Substring(0,7))" >> $env:GITHUB_OUTPUT
+
+      - name: Set lowercase image name
+        id: image
+        shell: powershell
+        run: |
+          $name = "${{ env.IMAGE_NAME }}".ToLower()
+          echo "name=$name" >> $env:GITHUB_OUTPUT
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}
+          tags: |
+            type=sha
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Save image tag
+        run: echo "sha-${{ steps.short_sha.outputs.sha_short }}" > image-tag.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: image-tag
+          path: image-tag.txt
+
+
+  # -----------------------------
+  # DEPLOY
+  # -----------------------------
+  deploy-to-okd:
+    needs: build-and-push-backend
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: [self-hosted, my-laptop]
+
+    steps:
+
+      - name: Install oc CLI (Windows safe)
+        shell: powershell
+        run: |
+          $dir = "$env:USERPROFILE\.local\bin"
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          Invoke-WebRequest `
+            -Uri "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-windows.zip" `
+            -OutFile "$env:TEMP\oc.zip"
+          Expand-Archive "$env:TEMP\oc.zip" -DestinationPath $dir -Force
+          echo "$dir" >> $env:GITHUB_PATH
+
+      - name: Log in to OKD
+        shell: powershell
+        run: |
+          oc login "${{ secrets.OKD_API_URL }}" `
+            --token="${{ secrets.OKD_TOKEN }}" `
+            --insecure-skip-tls-verify=true
+
+      - name: Deploy New Build Tag
+        shell: powershell
+        run: |
+          oc set image deployment/team-en04-backend `
+            team-en04-backend=${{ env.REGISTRY }}/${{ needs.build-and-push-backend.outputs.image_name }}:sha-${{ needs.build-and-push-backend.outputs.image_tag }} `
+            -n itip-en-04
+
+      - name: Wait for rollout
+        shell: powershell
+        run: |
+          oc rollout status deployment/team-en04-backend `
+            -n itip-en-04 `
+            --timeout=3m
