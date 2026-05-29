@@ -1,0 +1,13 @@
+.venv/
+.env
+tools/
+
+.idea/
+
+__pycache__/
+*.pyc
+
+list.txt
+migrate-patch.yaml
+Team-EN04-IoT/
+old/
