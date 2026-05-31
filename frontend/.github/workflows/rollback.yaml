@@ -1,0 +1,83 @@
+name: Rollback Frontend
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to roll back to (e.g. sha-abc1234). Leave empty to auto-detect last successful build."
+        required: false
+        default: ""
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  rollback-frontend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Set lowercase image name
+        id: image
+        run: echo "name=$(echo '${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: Download last successful artifact
+        if: ${{ inputs.tag == '' }}
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: main.yaml
+          name: image-tag
+          path: ./artifact
+          workflow_conclusion: success
+          if_no_artifact_found: fail
+
+      - name: Resolve rollback tag
+        id: resolve
+        run: |
+          if [ -n "${{ inputs.tag }}" ]; then
+            echo "Using manually provided tag"
+            echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            TAG=$(cat ./artifact/image-tag.txt)
+            echo "Using auto-detected tag from last successful run"
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Show rollback target
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Rolling back to:"
+          echo "${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.resolve.outputs.tag }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      - name: Install oc CLI
+        run: |
+          curl -sL https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz \
+            | tar xz -C /usr/local/bin oc
+
+      - name: Log in to OKD
+        run: |
+          oc login "${{ secrets.OKD_API_URL }}" \
+            --token="${{ secrets.OKD_TOKEN }}" \
+            --insecure-skip-tls-verify=true
+
+      - name: Patch frontend image
+        run: |
+          oc set image deployment/team-en04-frontend \
+            team-en04-frontend=${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.resolve.outputs.tag }} \
+            -n itip-en-04
+
+      - name: Wait for rollout
+        run: |
+          oc rollout status deployment/team-en04-frontend \
+            -n itip-en-04 \
+            --timeout=3m
+
+      - name: Done
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Frontend is now running: ${{ steps.resolve.outputs.tag }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

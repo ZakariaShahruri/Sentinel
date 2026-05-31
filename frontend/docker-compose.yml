@@ -1,0 +1,12 @@
+services:
+  frontend:
+    build:
+      context: .
+      args:
+        # Crucial: Next.js injects client-side variables during the "docker build" step!
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+    container_name: sentinel-frontend
+    ports:
+      - "3000:3000" # Frontend exposed on http://localhost:3000
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}

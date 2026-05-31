@@ -1,0 +1,194 @@
+name: Frontend CI/CD
+
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # -----------------------------
+  # CODE QUALITY JOB
+  # -----------------------------
+  lint:
+    runs-on: [self-hosted, frontend]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+  # -----------------------------
+  # TESTING JOB
+  # -----------------------------
+  test:
+    needs: lint
+    runs-on: [self-hosted, frontend]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Jest tests
+        run: npm test -- --ci --coverage --watchAll=false
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+  # -----------------------------
+  # BUILD & PUSH DOCKER IMAGE
+  # -----------------------------
+  build-and-push-frontend:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, frontend]
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.short_sha.outputs.sha_short }}
+      image_name: ${{ steps.image.outputs.name }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set short SHA
+        id: short_sha
+        shell: powershell
+        run: |
+          echo "sha_short=$($env:GITHUB_SHA.Substring(0,7))" >> $env:GITHUB_OUTPUT
+
+      - name: Set lowercase image name
+        id: image
+        shell: powershell
+        run: |
+          $name = "${{ env.IMAGE_NAME }}".ToLower()
+          echo "name=$name" >> $env:GITHUB_OUTPUT
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}
+          tags: |
+            type=sha
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+
+      - name: Save image tag artifact
+        shell: powershell
+        run: echo "sha-${{ steps.short_sha.outputs.sha_short }}" > image-tag.txt
+
+      - name: Upload image tag artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-tag
+          path: image-tag.txt
+          retention-days: 90
+
+  # -----------------------------
+  # AUTOMATIC CONTINUOUS DEPLOYMENT
+  # -----------------------------
+  deploy-to-okd:
+    needs: build-and-push-frontend
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: [self-hosted, frontend]
+    steps:
+      - name: Install oc CLI (Windows safe)
+        shell: powershell
+        run: |
+          $dir = "$env:USERPROFILE\.local\bin"
+          $ocExe = "$dir\oc.exe"
+
+          if (Test-Path $ocExe) {
+            Write-Host "oc already installed, skipping download."
+          } else {
+            New-Item -ItemType Directory -Force -Path $dir | Out-Null
+            Invoke-WebRequest `
+              -Uri "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-windows.zip" `
+              -OutFile "$env:TEMP\oc.zip"
+            Expand-Archive "$env:TEMP\oc.zip" -DestinationPath $dir -Force
+          }
+
+          echo "$dir" >> $env:GITHUB_PATH
+
+      - name: Log in to OKD
+        shell: powershell
+        run: |
+          oc login "${{ secrets.OKD_API_URL }}" `
+            --token="${{ secrets.OKD_TOKEN }}" `
+            --insecure-skip-tls-verify=true
+
+      - name: Deploy New Build Tag
+        shell: powershell
+        run: |
+          oc set image deployment/team-en04-frontend `
+            team-en04-frontend=${{ env.REGISTRY }}/${{ needs.build-and-push-frontend.outputs.image_name }}:sha-${{ needs.build-and-push-frontend.outputs.image_tag }} `
+            -n itip-en-04
+
+      - name: Verify pod is healthy
+        shell: powershell
+        run: |
+          $ready = oc get deployment team-en04-frontend `
+            -n itip-en-04 `
+            -o jsonpath='{.status.readyReplicas}'
+          if ([int]$ready -lt 1) {
+            Write-Host "No ready replicas after rollout"
+            exit 1
+          }
+          Write-Host "$ready replica(s) ready"
+
+      - name: Wait for rollout
+        shell: powershell
+        run: |
+          oc rollout status deployment/team-en04-frontend `
+            -n itip-en-04 `
+            --timeout=5m
