@@ -111,12 +111,13 @@ monorepo is maintained by **[Zakaria Shahruri](https://github.com/ZakariaShahrur
 led the **hardware / IoT** component (sensor firmware and ESP32 base station).
 
 The commit history preserves original authorship: each component's commits are attributed to
-its lead contributor, with `Co-authored-by` trailers crediting the full team. Contributors:
+its lead contributor, with `Co-authored-by` trailers crediting the full team.
 
-- Zakaria Shahruri — hardware / IoT lead
+**Contributors** (Team EN04):
+
+- Joseph Anise
+- Mohamed Bya
 - Nathan Pennings — frontend lead
+- Zakaria Shahruri — hardware / IoT lead
 - Oleksandr Uvarov — backend lead
 - Milan Vandenbussche
-- Mohammed (Med23B)
-- MrB
-- Tiebe Van Nieuwenhove
