@@ -1,0 +1,9 @@
+# Extra dependencies for the standalone analytics dashboard (analysis/dashboard.py).
+# The main API does not need these — install only if you run the Dash dashboard:
+#   pip install -r analysis/requirements.txt
+#   python analysis/dashboard.py
+dash
+plotly
+pandas
+psycopg2-binary
+python-dotenv
