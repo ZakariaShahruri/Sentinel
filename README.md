@@ -115,9 +115,9 @@ its lead contributor, with `Co-authored-by` trailers crediting the full team.
 
 **Contributors** (Team EN04):
 
-- Joseph Anise
-- Mohamed Bya
+- Joseph Anise — scrum master
+- Mohamed Bya — integration engineer
 - Nathan Pennings — frontend lead
 - Zakaria Shahruri — hardware / IoT lead
 - Oleksandr Uvarov — backend lead
-- Milan Vandenbussche
+- Milan Vandenbussche — product owner
