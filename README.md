@@ -18,15 +18,40 @@ and web frontend) into a single repository.
 
 ---
 
+## Screenshots
+
+> ℹ️ The images below are **placeholders**. Replace `docs/screenshots/dashboard.svg` and
+> `docs/screenshots/marble-game.svg` with real captures of the running apps (any web-friendly
+> format works — just keep the same filenames, or update the paths below).
+
+| Vibration Dashboard | Marble Game |
+| :---: | :---: |
+| <img src="docs/screenshots/dashboard.svg" alt="Sentinel vibration dashboard" width="100%"> | <img src="docs/screenshots/marble-game.svg" alt="Sentinel marble game" width="100%"> |
+| Live node status, sensor charts, event feed & alarms | Tilt the physical node to roll the marble in real time |
+
 ## Architecture
 
-```
-┌───────────────────────┐        ┌─────────────────────┐        ┌──────────────────┐        ┌───────────────────┐
-│  Arduino Nano node     │ 433MHz │   ESP32 base        │ Socket │  FastAPI backend  │  HTTP  │  Next.js frontend  │
-│  MPU-6050 accelerometer│──RF───▶│  station            │──.IO──▶│  + PostgreSQL     │◀──────▶│  dashboard + game  │
-│  AES-128-CTR packets   │ (AES)  │  decrypt + features │        │  classify + relay │        │  live, real-time   │
-└───────────────────────┘        │  OLED + status LEDs │        └──────────────────┘        └───────────────────┘
-                                  └─────────────────────┘
+```mermaid
+flowchart LR
+    subgraph NODE["🔋 Sensor Node — Arduino Nano"]
+        MPU["MPU-6050<br/>accelerometer<br/>~90 Hz"] --> FW["Firmware<br/>delta-compress<br/>AES-128-CTR"]
+    end
+    subgraph BASE["📡 Base Station — ESP32"]
+        RX["433 MHz RX<br/>decrypt + verify"] --> DSP["Features / tilt<br/>OLED + status LEDs"]
+    end
+    subgraph API["⚙️ Backend — FastAPI + Socket.IO"]
+        WS["Socket.IO server"] --> CLS["Event classifier"] --> DB[("PostgreSQL")]
+    end
+    subgraph WEB["🖥️ Web Client — Next.js"]
+        DASH["🛰️ Vibration dashboard"]
+        GAME["🎮 Marble game"]
+    end
+
+    FW -- "433 MHz RF" --> RX
+    DSP -- "Socket.IO" --> WS
+    DB --> WS
+    WS -- "Socket.IO / REST" --> DASH
+    WS -- "Socket.IO" --> GAME
 ```
 
 Each Nano samples at ~90&nbsp;Hz and transmits delta-compressed, AES-128-encrypted packets
@@ -35,6 +60,18 @@ node ID, derives per-window features (or tilt angles), drives an OLED and status
 feedback, and streams the result to the backend over Socket.IO. The backend classifies and
 persists events to PostgreSQL and re-broadcasts them to web clients in real time — driving both
 the vibration dashboard and the marble game.
+
+## Hardware
+
+| <img src="backend/documentation/hardware/arduino_nano.png" alt="Arduino Nano" width="220"> | <img src="backend/documentation/hardware/esp32.png" alt="ESP32" width="220"> | <img src="backend/documentation/hardware/accelerometer.png" alt="MPU-6050 accelerometer" width="220"> |
+| :---: | :---: | :---: |
+| **Arduino Nano** (ATmega328P) — sensor node | **ESP32** — base station | **MPU-6050** — accelerometer |
+
+The node samples the MPU-6050, delta-compresses and AES-encrypts the readings, and transmits
+them over a 433&nbsp;MHz RF link; the ESP32 base station decrypts, derives features, and forwards
+over Socket.IO. Full build notes and wiring are in
+[`backend/documentation/hardware/HARDWARE.MD`](backend/documentation/hardware/HARDWARE.MD) and
+[`iot/README.md`](iot/README.md).
 
 ## Repository layout
 
