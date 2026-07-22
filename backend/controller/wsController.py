@@ -29,7 +29,7 @@ async def disconnect(sid):
     print(f"[SIO] Client disconnected: {sid}")
 
 
-# ── Room joining (mirrors your ESP32 + etl_consumer logic) ───────
+# ── Room joining (ESP32 base station and dashboard clients) ───────
 
 
 @sio.event
