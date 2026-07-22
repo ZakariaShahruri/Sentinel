@@ -1,6 +1,10 @@
 # Sentinel — backend
 
-REST API for the Sentinel vibration-sensing IoT system. It receives classified vibration events from the Arduino Nano sensor nodes (via the ESP32 base station), it stores them in PostgreSQL, and then exposes them over HTTP for the frontend dashboard.
+FastAPI + Socket.IO service for the **Sentinel** wireless sensor platform. The ESP32 base
+station connects over Socket.IO and streams processed sensor data; the backend classifies and
+persists it to PostgreSQL and re-broadcasts it to dashboard clients in real time. It serves both
+platform applications — the **vibration monitor** (`sentinel_data`) and the **marble game**
+(`game_data`) — plus JWT/OTP authentication and a REST API for the frontend.
 
 ## Prerequisites
 
@@ -102,28 +106,29 @@ Do NOT use Mailpit in production — it's only for development and QA.
 ## Project Structure
 
 ```
-controller/        route handlers (HTTP layer)
-service/           business logic and SQL queries
-alembic/           database migrations
+controller/            route handlers — REST endpoints + wsController.py (Socket.IO server)
+service/               business logic and SQL queries
+alembic/               database migrations
+analysis/              standalone analytics (Dash dashboard + LLM event analysis)
 
-packet_parser.py   encodes/decodes 12-byte RF packets from the Arduino nodes
-etl.py             polls the ESP32 every 5s and writes events to the database
-mock_ingest.py     inserts fake events — use this when no hardware is available
-watchdog.py        logs which nodes are online based on heartbeat timeout
-evaluate.py        runs the classifier against training_samples and prints a report
-seed_user.py       creates the initial admin user (run once)
+main.py                FastAPI + Socket.IO ASGI app; APScheduler cleanup job
+models.py              SQLAlchemy models and the EventClass enum
+event_classifier.py    heuristic classifier — peak / RMS / ZCR / decay → event class
+config.py              settings loaded from the environment
+seed.py                seeds the initial admin user and reference data
 ```
 
 ## Architecture
 
-Data flows from the physical sensor nodes through the ESP32 base station into this backend:
+The ESP32 base station connects to this backend as a Socket.IO client and streams processed
+sensor data; the backend persists it and re-broadcasts to dashboard clients in real time:
 
 ```
 Arduino Nano (sensor node)
-  → 433 MHz RF →
-ESP32 (base station, /events endpoint)
-  → HTTP polling every 5s (etl.py) →
-PostgreSQL
-  → FastAPI REST API →
-Frontend dashboard
+  → 433 MHz RF (AES-128-CTR, delta-compressed) →
+ESP32 (base station — decrypts, computes features / tilt)
+  → Socket.IO ("sentinel_data" / "game_data") →
+FastAPI + Socket.IO backend (classify + persist)
+  → PostgreSQL + Socket.IO broadcast →
+Frontend (vibration dashboard / marble game)
 ```

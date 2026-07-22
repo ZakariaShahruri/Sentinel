@@ -1,6 +1,11 @@
 # Sentinel — frontend
 
-The Sentinel vibration monitoring platform's dashboard shows real-time node status, events, alarms, and system health. needs the backend API to be operational. The frontend also has a marble game controlled by a tilt controller.
+The web client for the **Sentinel** wireless sensor platform. It renders the two applications built on the platform:
+
+- **Vibration monitor** — a real-time dashboard of node status, events, alarms, and system health.
+- **Marble game** — a tilt-controlled game driven live by the physical sensor node.
+
+Both are powered by the same Socket.IO stream from the backend, which must be running (see [`../backend`](../backend)).
 
 ## Prerequisites
 
@@ -13,8 +18,8 @@ The Sentinel vibration monitoring platform's dashboard shows real-time node stat
 ### 1. clone the repository
 
 ```bash
-git clone <repo-url>
-cd Team-EN04-frontend
+git clone https://github.com/ZakariaShahruri/Sentinel.git
+cd Sentinel/frontend
 ```
 
 ### 2. install dependencies
@@ -51,7 +56,7 @@ Launch your browser and navigate to http://localhost:3000. The login page will b
 | `npm run test:watch`   | Run unit tests in watch mode             |
 | `npm run lint`         | Run ESLint                               |
 | `npm run format`       | Format all files with prettier           |
-| `npm run format:check` | Check formatting without modifiyng files |
+| `npm run format:check` | Check formatting without modifying files |
 
 ## Code quality
 

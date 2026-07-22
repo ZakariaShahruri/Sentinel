@@ -1,42 +1,48 @@
 # Sentinel
 
-**A multi-node IoT vibration-monitoring platform** — battery-powered sensor nodes stream
-encrypted accelerometer data over 433&nbsp;MHz RF to a base station, which forwards
-classified events to a REST backend and a real-time web dashboard.
+**A real-time wireless sensor platform.** Battery-powered nodes stream AES-encrypted,
+delta-compressed accelerometer data over 433&nbsp;MHz RF to an ESP32 base station, which relays
+it to a FastAPI + Socket.IO backend and a live web client — end to end, at interactive latency.
+
+The platform is demonstrated with **two applications** built on the same pipeline:
+
+- 🛰️ **Vibration monitor** — a real-time dashboard of node status, impact events, alarms, and system health.
+- 🎮 **Marble game** — a tilt-controlled game where you physically tip the sensor node to roll a marble on screen.
 
 This monorepo combines the three components of the system (hardware/firmware, backend API,
 and web frontend) into a single repository.
 
-> Originally built by **Team EN04** as an integration project at UC Leuven-Limburg (UCLL),
-> May 2026. See [Team & attribution](#team--attribution) below.
+> Built by **Team EN04** as an integration project at UC Leuven-Limburg (UCLL), May 2026.
+> **My role:** hardware / IoT lead — sensor-node and base-station firmware, the RF protocol,
+> compression, and encryption. See [Team & attribution](#team--attribution).
 
 ---
 
 ## Architecture
 
 ```
-┌──────────────────────┐        ┌────────────────────┐        ┌─────────────────┐        ┌──────────────────┐
-│  Arduino Nano node    │  433MHz │   ESP32 base       │ Socket │  FastAPI backend │  HTTP  │  Next.js frontend │
-│  MPU-6050 accelerometer│──RF───▶│  station           │──.IO──▶│  + PostgreSQL    │◀──────▶│  dashboard        │
-│  AES-128 CTR packets   │ (AES)  │  decrypt + dispatch │        │  ETL + ML events │        │  live monitoring  │
-└──────────────────────┘        │  OLED + status LEDs│        └─────────────────┘        └──────────────────┘
-                                 └────────────────────┘
+┌───────────────────────┐        ┌─────────────────────┐        ┌──────────────────┐        ┌───────────────────┐
+│  Arduino Nano node     │ 433MHz │   ESP32 base        │ Socket │  FastAPI backend  │  HTTP  │  Next.js frontend  │
+│  MPU-6050 accelerometer│──RF───▶│  station            │──.IO──▶│  + PostgreSQL     │◀──────▶│  dashboard + game  │
+│  AES-128-CTR packets   │ (AES)  │  decrypt + features │        │  classify + relay │        │  live, real-time   │
+└───────────────────────┘        │  OLED + status LEDs │        └──────────────────┘        └───────────────────┘
+                                  └─────────────────────┘
 ```
 
 Each Nano samples at ~90&nbsp;Hz and transmits delta-compressed, AES-128-encrypted packets
 over 433&nbsp;MHz RF. The ESP32 base station receives, decrypts, and dispatches packets by
-node ID, drives an OLED and status LEDs for local feedback, and forwards data to the backend
-over Socket.IO. The backend classifies vibration events, persists them to PostgreSQL, and
-exposes them over HTTP. The Next.js dashboard visualises node status, events, alarms, and
-system health in real time.
+node ID, derives per-window features (or tilt angles), drives an OLED and status LEDs for local
+feedback, and streams the result to the backend over Socket.IO. The backend classifies and
+persists events to PostgreSQL and re-broadcasts them to web clients in real time — driving both
+the vibration dashboard and the marble game.
 
 ## Repository layout
 
 | Path         | Component        | Stack                                                     |
 | ------------ | ---------------- | --------------------------------------------------------- |
 | [`iot/`](iot)         | Hardware / firmware | Arduino Nano (C++), ESP32 (C++), MPU-6050, 433&nbsp;MHz RF |
-| [`backend/`](backend) | REST API + ETL      | Python, FastAPI, PostgreSQL, Alembic, Docker              |
-| [`frontend/`](frontend)| Web dashboard       | TypeScript, Next.js, React, Jest                          |
+| [`backend/`](backend) | REST API + realtime | Python, FastAPI, Socket.IO, PostgreSQL, Alembic, Docker    |
+| [`frontend/`](frontend)| Web client          | TypeScript, Next.js, React, Recharts, Jest                |
 
 Each subfolder keeps its own README with detailed setup instructions.
 
@@ -55,9 +61,9 @@ data from the base station over Socket.IO.
 
 - **Custom RF protocol** — delta-compressed sensor packets with AES-128-CTR encryption over
   433&nbsp;MHz, with per-node dispatch on the base station.
-- **Real-time pipeline** — sensor → base → Socket.IO → backend ETL → dashboard, end to end.
-- **Event classification** — vibration events (peak, RMS, zero-crossing rate, decay) derived
-  on-device and classified server-side.
+- **Real-time pipeline** — sensor → base → Socket.IO → backend → web client, end to end at interactive latency.
+- **Signal processing on-device** — the base station derives per-window features (peak, RMS,
+  zero-crossing rate, decay) or tilt angles, which the backend classifies server-side.
 - **Production-minded tooling** — Docker Compose, Alembic migrations, monitoring, CI code-quality
   gates (ruff / ESLint / Prettier), and test suites across backend and frontend.
 
