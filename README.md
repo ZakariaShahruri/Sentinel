@@ -61,14 +61,13 @@ the vibration dashboard and the marble game.
 
 ## Hardware
 
-| <img src="backend/documentation/hardware/arduino_nano.png" alt="Arduino Nano" width="220"> | <img src="backend/documentation/hardware/esp32.png" alt="ESP32" width="220"> | <img src="backend/documentation/hardware/accelerometer.png" alt="MPU-6050 accelerometer" width="220"> |
+| <img src="docs/hardware/arduino_nano.png" alt="Arduino Nano" width="220"> | <img src="docs/hardware/esp32.png" alt="ESP32" width="220"> | <img src="docs/hardware/accelerometer.png" alt="MPU-6050 accelerometer" width="220"> |
 | :---: | :---: | :---: |
 | **Arduino Nano** (ATmega328P) — sensor node | **ESP32** — base station | **MPU-6050** — accelerometer |
 
 The node samples the MPU-6050, delta-compresses and AES-encrypts the readings, and transmits
 them over a 433&nbsp;MHz RF link; the ESP32 base station decrypts, derives features, and forwards
-over Socket.IO. Full build notes and wiring are in
-[`backend/documentation/hardware/HARDWARE.MD`](backend/documentation/hardware/HARDWARE.MD) and
+over Socket.IO. Full build notes, wiring, and the RF protocol are documented in
 [`iot/README.md`](iot/README.md).
 
 ## Repository layout
