@@ -20,13 +20,9 @@ and web frontend) into a single repository.
 
 ## Screenshots
 
-> ℹ️ The images below are **placeholders**. Replace `docs/screenshots/dashboard.svg` and
-> `docs/screenshots/marble-game.svg` with real captures of the running apps (any web-friendly
-> format works — just keep the same filenames, or update the paths below).
-
 | Vibration Dashboard | Marble Game |
 | :---: | :---: |
-| <img src="docs/screenshots/dashboard.svg" alt="Sentinel vibration dashboard" width="100%"> | <img src="docs/screenshots/marble-game.svg" alt="Sentinel marble game" width="100%"> |
+| <img src="docs/screenshots/dashboard.png" alt="Sentinel vibration dashboard" width="100%"> | <img src="docs/screenshots/marble-game.png" alt="Sentinel marble game" width="100%"> |
 | Live node status, sensor charts, event feed & alarms | Tilt the physical node to roll the marble in real time |
 
 ## Architecture
