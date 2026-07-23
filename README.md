@@ -1,5 +1,11 @@
 # Sentinel
 
+![C++](https://img.shields.io/badge/C%2B%2B-firmware-00599C?logo=cplusplus&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-backend-009688?logo=fastapi&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-frontend-000000?logo=nextdotjs&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-storage-4169E1?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-deploy-2496ED?logo=docker&logoColor=white)
+
 **A real-time wireless sensor platform.** Battery-powered nodes stream AES-encrypted,
 delta-compressed accelerometer data over 433&nbsp;MHz RF to an ESP32 base station, which relays
 it to a FastAPI + Socket.IO backend and a live web client — end to end, at interactive latency.
@@ -11,10 +17,6 @@ The platform is demonstrated with **two applications** built on the same pipelin
 
 This monorepo combines the three components of the system (hardware/firmware, backend API,
 and web frontend) into a single repository.
-
-> Built by **Team EN04** as an integration project at UC Leuven-Limburg (UCLL), May 2026.
-> **My role:** hardware / IoT lead — sensor-node and base-station firmware, the RF protocol,
-> compression, and encryption. See [Team & attribution](#team--attribution).
 
 ---
 
@@ -90,30 +92,12 @@ Each component runs independently — see the per-component READMEs:
 The frontend expects the backend running on `http://localhost:8000`; the backend receives
 data from the base station over Socket.IO.
 
-## Highlights
+## Features
 
 - **Custom RF protocol** — delta-compressed sensor packets with AES-128-CTR encryption over
   433&nbsp;MHz, with per-node dispatch on the base station.
 - **Real-time pipeline** — sensor → base → Socket.IO → backend → web client, end to end at interactive latency.
 - **Signal processing on-device** — the base station derives per-window features (peak, RMS,
   zero-crossing rate, decay) or tilt angles, which the backend classifies server-side.
-- **Production-minded tooling** — Docker Compose, Alembic migrations, monitoring, CI code-quality
-  gates (ruff / ESLint / Prettier), and test suites across backend and frontend.
-
-## Team & attribution
-
-Sentinel was a group project by **Team EN04** (UCLL Integration Project, May 2026). This
-monorepo is maintained by **[Zakaria Shahruri](https://github.com/ZakariaShahruri)**, who
-led the **hardware / IoT** component (sensor firmware and ESP32 base station).
-
-The commit history preserves original authorship: each component's commits are attributed to
-its lead contributor, with `Co-authored-by` trailers crediting the full team.
-
-**Contributors** (Team EN04):
-
-- Joseph Anise — scrum master
-- Mohamed Bya — integration engineer
-- Nathan Pennings — frontend lead
-- Zakaria Shahruri — hardware / IoT lead
-- Oleksandr Uvarov — backend lead
-- Milan Vandenbussche — product owner
+- **Production-minded tooling** — Docker Compose, Alembic migrations, uptime monitoring, CI
+  code-quality gates (ruff / ESLint / Prettier), and test suites across backend and frontend.
