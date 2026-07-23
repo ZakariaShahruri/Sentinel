@@ -66,14 +66,14 @@ jobs:
 
       - name: Patch frontend image
         run: |
-          oc set image deployment/team-en04-frontend \
-            team-en04-frontend=${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.resolve.outputs.tag }} \
-            -n itip-en-04
+          oc set image deployment/sentinel-frontend \
+            sentinel-frontend=${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.resolve.outputs.tag }} \
+            -n sentinel
 
       - name: Wait for rollout
         run: |
-          oc rollout status deployment/team-en04-frontend \
-            -n itip-en-04 \
+          oc rollout status deployment/sentinel-frontend \
+            -n sentinel \
             --timeout=3m
 
       - name: Done

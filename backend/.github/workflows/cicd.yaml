@@ -132,13 +132,13 @@ jobs:
       - name: Deploy New Build Tag
         shell: powershell
         run: |
-          oc set image deployment/team-en04-backend `
-            team-en04-backend=${{ env.REGISTRY }}/${{ needs.build-and-push-backend.outputs.image_name }}:sha-${{ needs.build-and-push-backend.outputs.image_tag }} `
-            -n itip-en-04
+          oc set image deployment/sentinel-backend `
+            sentinel-backend=${{ env.REGISTRY }}/${{ needs.build-and-push-backend.outputs.image_name }}:sha-${{ needs.build-and-push-backend.outputs.image_tag }} `
+            -n sentinel
 
       - name: Wait for rollout
         shell: powershell
         run: |
-          oc rollout status deployment/team-en04-backend `
-            -n itip-en-04 `
+          oc rollout status deployment/sentinel-backend `
+            -n sentinel `
             --timeout=3m

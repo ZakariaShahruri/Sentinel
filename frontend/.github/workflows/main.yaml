@@ -170,15 +170,15 @@ jobs:
       - name: Deploy New Build Tag
         shell: powershell
         run: |
-          oc set image deployment/team-en04-frontend `
-            team-en04-frontend=${{ env.REGISTRY }}/${{ needs.build-and-push-frontend.outputs.image_name }}:sha-${{ needs.build-and-push-frontend.outputs.image_tag }} `
-            -n itip-en-04
+          oc set image deployment/sentinel-frontend `
+            sentinel-frontend=${{ env.REGISTRY }}/${{ needs.build-and-push-frontend.outputs.image_name }}:sha-${{ needs.build-and-push-frontend.outputs.image_tag }} `
+            -n sentinel
 
       - name: Verify pod is healthy
         shell: powershell
         run: |
-          $ready = oc get deployment team-en04-frontend `
-            -n itip-en-04 `
+          $ready = oc get deployment sentinel-frontend `
+            -n sentinel `
             -o jsonpath='{.status.readyReplicas}'
           if ([int]$ready -lt 1) {
             Write-Host "No ready replicas after rollout"
@@ -189,6 +189,6 @@ jobs:
       - name: Wait for rollout
         shell: powershell
         run: |
-          oc rollout status deployment/team-en04-frontend `
-            -n itip-en-04 `
+          oc rollout status deployment/sentinel-frontend `
+            -n sentinel `
             --timeout=5m
