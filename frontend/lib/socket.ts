@@ -12,7 +12,7 @@ export function getSocket(): Socket {
 
     socket.on("connect", () => {
       console.log("[SIO] Connected:", socket!.id);
-      socket!.emit("joinRoom", "vibrationEN04");
+      socket!.emit("joinRoom", "sentinel");
     });
   }
   return socket;

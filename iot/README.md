@@ -1,4 +1,4 @@
-# Sentinel — Team EN04
+# Sentinel — Hardware & Firmware
 
 Multi-node IoT system using Arduino Nano(s) with MPU-6050 accelerometers and an ESP32 base station.
 
@@ -176,7 +176,7 @@ AES-128 CTR nonce incorporates `NODE_ID` in byte 5 and `seq` in bytes 6–7, pre
 
 ```json
 {
-  "room": "vibrationEN04",
+  "room": "sentinel",
   "node_id": 1,
   "seq": 42,
   "count": 12,
@@ -195,7 +195,7 @@ AES-128 CTR nonce incorporates `NODE_ID` in byte 5 and `seq` in bytes 6–7, pre
 
 ```json
 {
-  "room": "vibrationEN04",
+  "room": "sentinel",
   "node_id": 2,
   "seq": 17,
   "roll": 12.5,

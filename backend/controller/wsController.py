@@ -73,7 +73,7 @@ async def sentinel_data(sid, data):
     await asyncio.to_thread(_insert)
 
     # Forward to any dashboard clients in the same room
-    await sio.emit("sentinel_data", data, room="vibrationEN04", skip_sid=sid)
+    await sio.emit("sentinel_data", data, room="sentinel", skip_sid=sid)
 
 
 @sio.event
@@ -87,4 +87,4 @@ async def game_data(sid, data):
     # tiltreading table should be adjusted
 
     # Forward to dashboard listeners in the same room
-    await sio.emit("game_data", data, room="vibrationEN04", skip_sid=sid)
+    await sio.emit("game_data", data, room="sentinel", skip_sid=sid)

@@ -46,7 +46,7 @@ export function useSocket() {
 
   const sendCommand = useCallback((command: string) => {
     socket.current.emit("send_command", {
-      room: "vibrationEN04",
+      room: "sentinel",
       command,
     });
   }, []);
